@@ -19,7 +19,6 @@ from transformers import (
 
 warnings.simplefilter("ignore", UserWarning)
 
-
 # Fix all seeds
 SEED = 42
 transformers.set_seed(SEED)
@@ -62,6 +61,7 @@ class AbstractTransformersAugmenter(ABC):
 
 class MultitaskDoubleTranlator(AbstractTransformersAugmenter):
     """Multitask-t5-model augmentator."""
+
     def __init__(
             self,
             model_path: str,
@@ -126,8 +126,9 @@ class MultitaskDoubleTranlator(AbstractTransformersAugmenter):
         return backward_translate.replace(".", "").strip().lower()
 
 
-class HelsinkikDoubleTranlator(AbstractTransformersAugmenter):
+class HelsinkikDoubleTranslator(AbstractTransformersAugmenter):
     """Helsinki models augmentator."""
+
     def __init__(
             self,
             helsinki_ru_en_model_path: str,
@@ -220,12 +221,87 @@ class HelsinkikDoubleTranlator(AbstractTransformersAugmenter):
         return backward_translation.replace(".", "").strip().lower()
 
 
+class Paraphraser(AbstractTransformersAugmenter):
+    """Paraphrase augmentator."""
+
+    def __init__(
+            self,
+            paraphrase_model: str,
+            paraphrase_tokenizer: str,
+            device: str = "cuda" if torch.cuda.is_available() else "cpu",
+    ) -> None:
+        """Initialization class instance.
+
+        @param paraphrase_model: paraphrase-model path
+        @param paraphrase_tokenizer: paraphrase-tokenizer path
+        @param device: device for model inference
+        """
+        self.device = device
+        self.paraphrase_model, self.paraphrase_tokenizer = \
+            self.get_model_and_tokenizer(
+                model_path=paraphrase_model,
+                tokenizer_path=paraphrase_tokenizer
+            )
+
+    def get_model_and_tokenizer(
+            self,
+            model_path: str,
+            tokenizer_path: str
+    ) -> Tuple[T5ForConditionalGeneration, T5Tokenizer]:
+        """Load paraphrase-model and paraphrase-tokenizer
+        from hard to memory.
+
+        @param model_path: paraphrase-model path
+        @param tokenizer_path: paraphrase-tokenizer path
+        @return: paraphrase-model, paraphrase-tokenizer
+        """
+        model_from_file = T5ForConditionalGeneration.from_pretrained(
+            model_path, local_files_only=True)
+        tokenizer_from_file = T5Tokenizer.from_pretrained(
+            tokenizer_path, local_files_only=True)
+        model_from_file.to(self.device)
+        model_from_file.eval()
+        return model_from_file, tokenizer_from_file
+
+    def get_augmenteted_text(
+            self,
+            text: str,
+    ) -> str:
+        """Generate augmented text data with paraphrase-model.
+
+        @param text: input text
+        @return: generated text
+        """
+        x = self.paraphrase_tokenizer(
+            text,
+            return_tensors="pt",
+            padding=True
+        ).to(self.paraphrase_model.device)
+        max_size = int(x.input_ids.shape[1] * 1.5 + 10)
+        with torch.inference_mode():
+            out = self.paraphrase_model.generate(
+                **x,
+                encoder_no_repeat_ngram_size=4,
+                num_beams=5,
+                max_length=max_size,
+                do_sample=False
+            )
+        return self.paraphrase_tokenizer.decode(
+            out[0], skip_special_tokens=True)
+
+
 class TransformersAugmenterFactory:
+    """Create factory with transformers based models for text augmentation."""
+
     @staticmethod
     def create_augmenter(
             augmenter: str
-    ) -> Union[MultitaskDoubleTranlator, HelsinkikDoubleTranlator]:
-        """Create augmenter class instance .
+    ) -> Union[
+        MultitaskDoubleTranlator,
+        HelsinkikDoubleTranslator,
+        Paraphraser
+    ]:
+        """Create augmenter class instance.
 
         @param augmenter: augmenter type
         @return: augmenter class instance
@@ -237,7 +313,7 @@ class TransformersAugmenterFactory:
                     tokenizer_path="../models/rut5-base-multitask/tokenizer/"
                 )
             elif augmenter == "HelsinkikDoubleTranlator":
-                return HelsinkikDoubleTranlator(
+                return HelsinkikDoubleTranslator(
                     helsinki_ru_en_model_path="../models/helsinki/"
                                               "opus-mt-ru-en/model/",
                     helsinki_ru_en_tokenizer_path="../models/helsinki/"
@@ -246,6 +322,12 @@ class TransformersAugmenterFactory:
                                               "opus-mt-en-ru/model/",
                     helsinki_en_ru_tokenizer_path="../models/helsinki/"
                                                   "opus-mt-en-ru/tokenizer/"
+                )
+            elif augmenter == "Paraphraser":
+                return Paraphraser(
+                    paraphrase_model="../models/rut5-base-paraphraser/model/",
+                    paraphrase_tokenizer="../models/rut5-base-paraphraser/"
+                                         "tokenizer/"
                 )
             else:
                 raise AssertionError("Augmenter type is not valid.")

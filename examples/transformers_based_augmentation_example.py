@@ -8,7 +8,7 @@ from text_data_augmentation_tools.transformers_based_augmenation import (
 
 if __name__ == '__main__':
 
-    text = "добрый день, сколько сейчас время?"
+    text = "добрый день, подскажите пожалуйста как пройти в библиотеку?"
 
     # MultitaskDoubleTranlator
     augmenter = TransformersAugmenterFactory.create_augmenter(
@@ -25,3 +25,10 @@ if __name__ == '__main__':
     new_text_data = augmenter.get_augmenteted_text(text=text)
     print(f"Generate time, s: {(time.time() - start_time)}")
     print(f"Helsinki-model generated text: {new_text_data}\n\n")
+
+    # Paraphraser
+    augmenter = TransformersAugmenterFactory.create_augmenter("Paraphraser")
+    start_time = time.time()
+    new_text_data = augmenter.get_augmenteted_text(text=text)
+    print(f"Generate time, s: {(time.time() - start_time)}")
+    print(f"Helsinki-model generated text: {new_text_data}")
