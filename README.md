@@ -10,7 +10,7 @@ Contains tools for augmetation russian text data with:
 - replacing a word with its synonym/most similar words:
   - based on WordNet
   - based on Word2Vec model
-- random permutations/deletions of words #TODO
+- random permutations/deletions of words
 - insertion of parasitic words #TODO
 - inserting introductory words #TODO
 - inserting typos #TODO
