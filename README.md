@@ -16,7 +16,7 @@ Contains tools for augmetation russian text data with:
 - inserting typos #TODO
 
 ## Project structure
-- /models - transformers model, need to download this folder to project directory () 
+- /models - [models](https://drive.google.com/drive/folders/1o8B47dOFpCt_C9VAuxz_q16jZSu7B6Yc?usp=sharing), need to download this folder to project directory 
 - /text_data_augmentation_tools - augmentation tools
 - /examples - usage examples
 - requirements.txt - project Python requirements
