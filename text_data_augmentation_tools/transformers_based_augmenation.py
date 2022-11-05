@@ -312,7 +312,7 @@ class TransformersAugmenterFactory:
                     model_path="../models/rut5-base-multitask/model/",
                     tokenizer_path="../models/rut5-base-multitask/tokenizer/"
                 )
-            elif augmenter == "HelsinkikDoubleTranlator":
+            elif augmenter == "HelsinkikDoubleTranslator":
                 return HelsinkikDoubleTranslator(
                     helsinki_ru_en_model_path="../models/helsinki/"
                                               "opus-mt-ru-en/model/",
